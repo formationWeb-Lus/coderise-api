@@ -1,0 +1,19 @@
+{
+  "name": "coderise-api",
+  "version": "1.0.0",
+  "description": "Coderise Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "axios": "^1.x",
+    "cors": "^2.x",
+    "dotenv": "^16.x",
+    "express": "^5.x"
+  },
+  "devDependencies": {
+    "nodemon": "^3.x"
+  }
+}
