@@ -10,5 +10,5 @@ app.use("/api/payment", paymentRoutes);
 
 const PORT = 5000;
 app.listen(PORT, () => {
-  console.log("SerdiPay VPS running on http://localhost:",PORT);
+  console.log(`SerdiPay VPS running on http://localhost:${PORT}`);
 });
