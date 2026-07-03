@@ -8,7 +8,7 @@ app.use(express.json());
 const paymentRoutes = require("./routes/payment");
 app.use("/api/payment", paymentRoutes);
 
-const PORT = 3000;
+const PORT = 5000;
 app.listen(PORT, () => {
-  console.log("SerdiPay VPS running on port", PORT);
+  console.log("SerdiPay VPS running on http://localhost:",PORT);
 });
