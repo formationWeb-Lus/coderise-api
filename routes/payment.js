@@ -3,10 +3,11 @@ const router = express.Router();
 
 const {
   initiatePayment,
-  serdipayCallback,
+  paymentCallback,
 } = require("../controllers/serdipay.controller");
 
 router.post("/initiate", initiatePayment);
-router.post("/callback", serdipayCallback);
+
+router.post("/callback", paymentCallback);
 
 module.exports = router;

@@ -1,44 +1,151 @@
-const { pay } = require("../services/serdipay.service");
+const serdiPayService = require("../services/serdipay.service");
+const config = require("../config/serdipay.config");
 
-// 🚀 INIT PAYMENT
+
+/**
+ * =====================================
+ * INITIER UN PAIEMENT C2B
+ * =====================================
+ * POST /payments/initiate
+ */
 exports.initiatePayment = async (req, res) => {
-  try {
-    const { courseId, amount, phone, telecom } = req.body;
 
-    const result = await pay({
-      amount,
-      phone,
-      telecom,
-    });
+    try {
 
-    return res.json({
-      success: true,
-      message: "Paiement lancé",
-      data: result,
-      redirectUrl: `https://coderise-solution.com/dashboard/enrollment/${courseId}/payment?status=pending`,
-    });
+        const {
+            amount,
+            phone,
+            telecom
+        } = req.body;
 
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.response?.data || error.message,
-    });
-  }
+
+        // Vérification des champs obligatoires
+        if (!amount || !phone || !telecom) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                "amount, phone et telecom sont obligatoires"
+
+            });
+
+        }
+
+
+        // Appel SerdiPay
+        const payment =
+        await serdiPayService.initiatePayment({
+
+            amount,
+
+            phone,
+
+            telecom
+
+        });
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+            "Paiement initialisé avec succès",
+
+            data: payment
+
+        });
+
+
+    } catch (error) {
+
+
+        console.error(
+            "❌ Controller Payment Error:",
+            error
+        );
+
+
+        return res.status(
+            error.status || 500
+        )
+        .json({
+
+            success:false,
+
+            message:
+            error.message ||
+            "Erreur lors du paiement"
+
+        });
+
+    }
+
 };
 
-// 🔔 CALLBACK SERDIPAY
-exports.serdipayCallback = (req, res) => {
-  console.log("📩 CALLBACK:", req.body);
 
-  const payment = req.body.payment;
 
-  if (payment?.status === "success") {
-    console.log("✅ PAYMENT OK:", payment.transactionId);
+/**
+ * =====================================
+ * CALLBACK SERDIPAY
+ * =====================================
+ * POST /payments/callback
+ */
+exports.paymentCallback = async (req,res)=>{
 
-    // TODO:
-    // - activer cours utilisateur
-    // - enregistrer DB
-  }
+    try {
 
-  res.json({ received: true });
+
+        console.log(
+            "📩 Callback SerdiPay reçu:",
+            req.body
+        );
+
+
+        /**
+         * Ici plus tard :
+         * 1. Vérifier la signature SerdiPay
+         * 2. Chercher la transaction
+         * 3. Modifier le statut :
+         *
+         * PENDING -> SUCCESS
+         *
+         * 4. Inscrire automatiquement
+         *    l'étudiant au cours
+         */
+
+
+        return res.status(200).json({
+
+            success:true,
+
+            message:
+            "Callback reçu"
+
+        });
+
+
+
+    } catch(error){
+
+
+        console.error(
+            "Callback Error:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success:false,
+
+            message:
+            "Erreur callback"
+
+        });
+
+    }
+
 };
