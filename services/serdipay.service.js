@@ -102,7 +102,14 @@ async function initiatePayment({
 
     return response.data;
   } catch (error) {
-    console.error("❌ Erreur Paiement");
+    console.error("========== SERDIPAY ERROR ==========");
+
+if (error.response) {
+    console.error("Status :", error.response.status);
+    console.error("Data :", error.response.data);
+} else {
+    console.error(error.message);
+}
 
     throw {
       status: error.response?.status || 500,
