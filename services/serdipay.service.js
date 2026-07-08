@@ -72,6 +72,7 @@ async function initiatePayment({
   amount,
   phone,
   telecom,
+  currency,
 }) {
   try {
     const token = await getToken();
@@ -88,7 +89,7 @@ async function initiatePayment({
 
         amount,
 
-        currency: config.CURRENCY,
+        currency: currency || config.CURRENCY,
 
         telecom,
       },

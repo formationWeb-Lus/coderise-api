@@ -13,10 +13,11 @@ exports.initiatePayment = async (req, res) => {
     try {
 
         const {
-            amount,
-            phone,
-            telecom
-        } = req.body;
+    amount,
+    phone,
+    telecom,
+    currency
+} = req.body;
 
 
         // Vérification des champs obligatoires
@@ -35,16 +36,12 @@ exports.initiatePayment = async (req, res) => {
 
 
         // Appel SerdiPay
-        const payment =
-        await serdiPayService.initiatePayment({
-
-            amount,
-
-            phone,
-
-            telecom
-
-        });
+        const payment = await serdiPayService.initiatePayment({
+    amount,
+    phone,
+    telecom,
+    currency,
+});
 
 
         return res.status(200).json({
