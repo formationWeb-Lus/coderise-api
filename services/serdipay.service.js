@@ -106,7 +106,9 @@ async function initiatePayment({
 
 if (error.response) {
     console.error("Status :", error.response.status);
-    console.error("Data :", error.response.data);
+    console.error(
+        JSON.stringify(error.response.data, null, 2)
+    );
 } else {
     console.error(error.message);
 }
