@@ -11,7 +11,7 @@ let tokenExpiration = null;
  */
 
 const api = axios.create({
-  baseURL: config.BASE_URL,
+  baseURL: config.BASE_URL_TEST,
   timeout: config.TIMEOUT,
   headers: {
     "Content-Type": "application/json",

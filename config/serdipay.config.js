@@ -6,6 +6,9 @@ module.exports = {
     process.env.SERDIPAY_BASE_URL ||
     "https://public-apis.services.serdipay.com/api/public-api/v1",
 
+  BASE_URL_TEST: process.env.SERDIPAY_BASE_URL_TEST ||
+    "https://public-apis.services.serdipay.com/api/public-api/v1",
+
   // Authentification Merchant
   EMAIL: process.env.SERDIPAY_EMAIL,
   PASSWORD: process.env.SERDIPAY_PASSWORD,
