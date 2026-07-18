@@ -1,0 +1,330 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+
+  transactionId   String?  @unique
+  sessionId       String?  @unique
+
+  userId          Int?
+  courseId        Int?
+
+  phone           String?
+  telecom         String?
+  amount          Float
+
+  status          PaymentStatus @default(PENDING)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user   User?   @relation(fields:[userId], references:[id])
+  course Course? @relation(fields:[courseId], references:[id])
+}
+
+
+
+model User {
+  name                  String
+  email                 String?                @unique
+  password              String
+  id                    Int                    @id @default(autoincrement())
+  phone                 String?                @unique
+  image                 String?
+  role                  String
+  announcementReads     AnnouncementRead[]
+  assignmentSubmissions AssignmentSubmission[]
+  attempts              ExerciseAttempt[]
+  submissions           ExerciseSubmission[]
+  notifications         Notification[]
+  studentCourses        StudentCourse[]
+  quizSubmissions       QuizSubmission[] // <-- relation inverse
+  codeFiles             CodeFile[]
+  folders               CodeFolder[]
+  payments               Payment[]
+}
+
+model CodeFolder {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  files CodeFile[]
+}
+
+model CodeFile {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  html String @default("")
+  css  String @default("")
+  js   String @default("")
+
+  userId   Int
+  folderId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  folder CodeFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+}
+
+model StudentCourse {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  studentId Int?
+  courseId  Int
+
+  student Student? @relation(fields: [studentId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  course  Course   @relation(fields: [courseId], references: [id])
+
+  completedLessons CompletedLesson[] // 🔥 OBLIGATOIRE
+}
+
+model CompletedLesson {
+  id Int @id @default(autoincrement())
+
+  studentCourseId Int
+  lessonId        Int
+
+  lesson        Lesson        @relation(fields: [lessonId], references: [id])
+  studentCourse StudentCourse @relation(fields: [studentCourseId], references: [id])
+}
+
+model Course {
+  id             Int             @id @default(autoincrement())
+  title          String
+  description    String
+  imageUrl       String?
+  duration       Int
+  createdAt      DateTime        @default(now())
+  announcements  Announcement[]
+  modules        Module[]
+  studentCourses StudentCourse[]
+  payments        Payment[]
+}
+
+model Module {
+  id       Int      @id @default(autoincrement())
+  courseId Int
+  order    Int
+  title    String
+  lessons  Lesson[]
+  course   Course   @relation(fields: [courseId], references: [id])
+}
+
+model Lesson {
+  id                    Int                    @id @default(autoincrement())
+  moduleId              Int
+  order                 Int
+  title                 String
+  content               String
+  videoUrl              String?
+  pdfUrl                String?
+  description           String?
+  videoDescription      String?
+  assignmentSubmissions AssignmentSubmission[]
+  completedLessons      CompletedLesson[]
+  exercises             Exercise[]
+  module                Module                 @relation(fields: [moduleId], references: [id])
+  quizzes               Quiz[] // 🔹 AJOUTÉ
+}
+
+model Quiz {
+  id          Int              @id @default(autoincrement())
+  lessonId    Int
+  title       String
+  order       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  lesson      Lesson           @relation(fields: [lessonId], references: [id])
+  questions   Question[]
+  exercises   Exercise[]
+  submissions QuizSubmission[] // <-- AJOUTE CE CHAMP pour relation inverse
+  // plus de updatedAt ici
+}
+
+model Question {
+  id       Int          @id @default(autoincrement())
+  quizId   Int
+  question String
+  type     ExerciseType @default(TEXT) // TEXT, QCM, BOOLEAN
+  options  String? // JSON string pour les options QCM
+  answer   String
+  points   Int          @default(10)
+  quiz     Quiz         @relation(fields: [quizId], references: [id])
+}
+
+model QuizSubmission {
+  id          Int       @id @default(autoincrement())
+  quizId      Int
+  userId      Int
+  score       Int?
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  quiz Quiz @relation(fields: [quizId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([quizId, userId])
+}
+
+model Exercise {
+  id        Int          @id @default(autoincrement())
+  lessonId  Int
+  quizId    Int? // 🔥 NOUVEAU (optionnel)
+  question  String
+  answer    String
+  type      ExerciseType @default(TEXT)
+  points    Int          @default(10)
+  deadline  DateTime
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  order     Int          @default(0)
+
+  choices Json? // 🔥 pour QCM
+
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+  quiz   Quiz?  @relation(fields: [quizId], references: [id])
+
+  attempts    ExerciseAttempt[]
+  submissions ExerciseSubmission[]
+}
+
+model ExerciseSubmission {
+  id          Int              @id @default(autoincrement())
+  exerciseId  Int
+  userId      Int
+  answer      String?
+  submittedAt DateTime?
+  score       Int              @default(0)
+  status      SubmissionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  exercise    Exercise         @relation(fields: [exerciseId], references: [id])
+  user        User             @relation(fields: [userId], references: [id])
+
+  @@unique([exerciseId, userId])
+}
+
+model ExerciseAttempt {
+  id          Int       @id @default(autoincrement())
+  studentId   Int
+  exerciseId  Int
+  score       Int?
+  createdAt   DateTime  @default(now())
+  answer      String?
+  submittedAt DateTime?
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
+  student     User      @relation(fields: [studentId], references: [id])
+}
+
+model AssignmentSubmission {
+  id       Int @id @default(autoincrement())
+  userId   Int
+  lessonId Int
+
+  filePath String? // ⬅️ TEMPORAIRE
+  fileUrl  String? // ⬅️ TEMPORAIRE
+
+  status         SubmissionStatus @default(PENDING)
+  createdAt      DateTime         @default(now())
+  feedback       String?
+  score          Int?
+  studentComment String?
+
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+model Announcement {
+  id        Int                @id @default(autoincrement())
+  courseId  Int
+  title     String
+  content   String
+  createdAt DateTime           @default(now())
+  videoUrl  String?
+  course    Course             @relation(fields: [courseId], references: [id])
+  reads     AnnouncementRead[]
+}
+
+model Student {
+  id                Int                @id @default(autoincrement())
+  name              String
+  email             String             @unique
+  announcementReads AnnouncementRead[]
+  studentCourses    StudentCourse[]
+}
+
+model AnnouncementRead {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  announcementId Int
+  readAt         DateTime     @default(now())
+  studentId      Int?
+  announcement   Announcement @relation(fields: [announcementId], references: [id])
+  student        Student?     @relation(fields: [studentId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, announcementId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum ExerciseType {
+  TEXT
+  QCM
+  BOOLEAN
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED // ✅ ajouter ici
+  GRADED
+  LATE
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  createdAt DateTime @default(now())
+}
+

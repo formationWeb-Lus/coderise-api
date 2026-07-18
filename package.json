@@ -8,10 +8,12 @@
     "dev": "nodemon src/server.js"
   },
   "dependencies": {
+    "@prisma/client": "^6.16.2",
     "axios": "^1.x",
     "cors": "^2.x",
     "dotenv": "^16.x",
-    "express": "^5.x"
+    "express": "^5.x",
+    "prisma": "^6.16.2"
   },
   "devDependencies": {
     "nodemon": "^3.x"

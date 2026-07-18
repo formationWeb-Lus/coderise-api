@@ -1,13 +1,12 @@
 require("dotenv").config();
 
-module.exports = {
-  // Nouvelle URL SerdiPay (migration 2026)
-  BASE_URL:
-    process.env.SERDIPAY_BASE_URL ||
-    "https://public-apis.services.serdipay.com/api/public-api/v1",
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-  BASE_URL_TEST: process.env.SERDIPAY_BASE_URL_TEST ||
-    "https://public-apis.services.serdipay.com/api/public-api/v1",
+module.exports = {
+  // URL utilisée selon l'environnement
+  BASE_URL: IS_PRODUCTION
+    ? process.env.SERDIPAY_BASE_URL
+    : process.env.SERDIPAY_BASE_URL_TEST,
 
   // Authentification Merchant
   EMAIL: process.env.SERDIPAY_EMAIL,
@@ -24,11 +23,11 @@ module.exports = {
 
   CALLBACK_URL:
     process.env.SERDIPAY_CALLBACK_URL ||
-    "http://api.coderise-solution.com/api/payment/callback",
+    "https://api.coderise-solution.com/api/payment/callback",
 
   TOKEN_CACHE_MINUTES: 50,
 
-  TIMEOUT: 120000, // 2 minutes
+  TIMEOUT: 120000,
 
   TELECOM: {
     AIRTEL: "AM",

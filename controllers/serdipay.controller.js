@@ -1,311 +1,174 @@
 const serdiPayService = require("../services/serdipay.service");
 
-
 /**
- * =====================================
- * INITIER UN PAIEMENT C2B
- * =====================================
+ * ==========================================
+ * INITIER UN PAIEMENT
  * POST /api/payment/initiate
+ * ==========================================
  */
 exports.initiatePayment = async (req, res) => {
-
-  console.log("========== CONTROLLER PAYMENT ==========");
-  console.log("Headers :", req.headers);
-  console.log("Body reçu :", req.body);
-
+  console.log("\n========================================");
+  console.log("🚀 INITIATE PAYMENT");
+  console.log("========================================");
+  console.log("Date :", new Date().toISOString());
+  console.log("Body :", JSON.stringify(req.body, null, 2));
 
   try {
-
-    /**
-     * Protection si req.body est vide
-     */
-    if (!req.body) {
+    if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({
         success: false,
         message: "Le body JSON est obligatoire.",
       });
     }
 
-
     const {
+      userId,
+      courseId,
       amount,
       phone,
       telecom,
       currency,
     } = req.body;
 
-
-    console.log("========== PAYMENT REQUEST ==========");
-    console.log({
-      amount,
-      phone,
-      telecom,
-      currency,
-    });
-
-
-
     /**
-     * Vérification des champs obligatoires
+     * Champs obligatoires
      */
-    if (!amount || !phone || !telecom) {
-
+    if (
+      !userId ||
+      !courseId ||
+      !amount ||
+      !phone ||
+      !telecom
+    ) {
       return res.status(400).json({
         success: false,
         message:
-          "amount, phone et telecom sont obligatoires.",
+          "userId, courseId, amount, phone et telecom sont obligatoires.",
       });
-
     }
 
-
-
     /**
-     * Vérification montant
+     * Validation montant
      */
     if (Number(amount) <= 0) {
-
       return res.status(400).json({
         success: false,
-        message:
-          "Le montant doit être supérieur à zéro.",
+        message: "Le montant doit être supérieur à zéro.",
       });
-
     }
 
-
-
     /**
-     * Vérification téléphone
+     * Validation téléphone RDC
      */
     if (
       typeof phone !== "string" ||
       !phone.startsWith("243")
     ) {
-
       return res.status(400).json({
         success: false,
-        message:
-          "Le numéro doit commencer par 243.",
+        message: "Le numéro doit commencer par 243.",
       });
-
     }
 
-
-
     /**
-     * Vérification opérateur
+     * Validation opérateur
      */
-    const telecoms = [
-      "AM",
-      "OM",
-      "MP",
-      "AF"
-    ];
-
+    const telecoms = ["AM", "OM", "MP", "AF"];
 
     if (!telecoms.includes(telecom)) {
-
       return res.status(400).json({
         success: false,
         message:
-          "Télécom invalide. Utilisez AM, OM, MP ou AF.",
+          "Télécom invalide (AM, OM, MP ou AF).",
       });
-
     }
 
-
-
     /**
-     * Vérification devise
+     * Validation devise
      */
     if (
       currency &&
       !["CDF", "USD"].includes(currency)
     ) {
-
       return res.status(400).json({
         success: false,
-        message:
-          "La devise doit être CDF ou USD.",
+        message: "Devise invalide.",
       });
-
     }
 
-
-
     /**
-     * Appel API SerdiPay
+     * Appel du service
      */
-    console.log("========== APPEL SERDIPAY ==========");
-
-
-    const payment =
+    const result =
       await serdiPayService.initiatePayment({
-
+        userId,
+        courseId,
         amount,
         phone,
         telecom,
         currency,
-
       });
 
-
-
-    console.log("========== SERDIPAY RESPONSE ==========");
-    console.log(payment);
-
-
-
     return res.status(200).json({
-
       success: true,
-
-      message:
-        "Paiement initialisé avec succès.",
-
-      data: payment,
-
+      message: "Paiement initialisé.",
+      data: result,
     });
-
-
 
   } catch (error) {
 
-
-    console.error("========== PAYMENT ERROR ==========");
+    console.error("\n========================================");
+    console.error("❌ INITIATE PAYMENT ERROR");
+    console.error("========================================");
     console.error(error);
 
-
-
-    return res.status(
-      error.status || 500
-    ).json({
-
+    return res.status(error.status || 500).json({
       success: false,
-
       message:
         error.message ||
         "Erreur lors de l'initialisation du paiement.",
-
+      details: error.details || null,
     });
 
-
   }
-
 };
 
-
-
-
-
 /**
- * =====================================
+ * ==========================================
  * CALLBACK SERDIPAY
- * =====================================
  * POST /api/payment/callback
+ * ==========================================
  */
 exports.paymentCallback = async (req, res) => {
 
+  console.log("\n========================================");
+  console.log("📩 CALLBACK SERDIPAY");
+  console.log("========================================");
+  console.log(JSON.stringify(req.body, null, 2));
 
   try {
 
-
-    console.log("========== CALLBACK SERDIPAY ==========");
-    console.log(req.body);
-
-
-
-    if (!req.body) {
-
-      return res.status(400).json({
-
-        success: false,
-
-        message:
-          "Callback vide.",
-
-      });
-
-    }
-
-
-
-    const {
-      payment
-    } = req.body;
-
-
-
-    if (payment) {
-
-
-      console.log(
-        "Statut :",
-        payment.status
-      );
-
-
-      console.log(
-        "Transaction :",
-        payment.transactionId
-      );
-
-
-      console.log(
-        "Session :",
-        payment.sessionId
-      );
-
-
-
-      /**
-       * TODO:
-       *
-       * 1. Vérifier signature SerdiPay
-       * 2. Chercher transaction en DB
-       * 3. Modifier statut paiement
-       * 4. Inscrire étudiant
-       * 5. Envoyer notification
-       */
-
-    }
-
-
+    await serdiPayService.processCallback(req.body);
 
     return res.status(200).json({
-
       success: true,
-
-      message:
-        "Callback reçu avec succès.",
-
+      message: "Callback traité avec succès.",
     });
-
-
 
   } catch (error) {
 
-
-    console.error(
-      "========== CALLBACK ERROR =========="
-    );
-
+    console.error("\n========================================");
+    console.error("❌ CALLBACK ERROR");
+    console.error("========================================");
     console.error(error);
 
-
-
-    return res.status(500).json({
-
+    return res.status(error.status || 500).json({
       success: false,
-
       message:
+        error.message ||
         "Erreur lors du traitement du callback.",
-
     });
 
-
   }
-
 
 };
