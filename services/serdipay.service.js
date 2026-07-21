@@ -2,6 +2,14 @@ const axios = require("axios");
 const prisma = require("../lib/prisma");
 const config = require("../config/serdipay.config");
 
+
+console.log("========================================");
+console.log("CONFIG SERDIPAY");
+console.log("BASE_URL :", config.BASE_URL);
+console.log("EMAIL :", config.EMAIL);
+console.log("TIMEOUT :", config.TIMEOUT);
+console.log("========================================");
+
 /**
  * ==========================================
  * CACHE DU TOKEN
@@ -17,7 +25,9 @@ let tokenExpiresAt = null;
  * ==========================================
  */
 
+
 const api = axios.create({
+  baseURL: config.BASE_URL,
   timeout: config.TIMEOUT,
   headers: {
     "Content-Type": "application/json",
@@ -49,7 +59,7 @@ async function getAccessToken() {
     console.log("========================================");
 
     const response = await api.post(
-      `${config.BASE_URL}/merchant/get-token`,
+    "/merchant/get-token",
       {
         email: config.EMAIL,
         password: config.PASSWORD,
@@ -221,65 +231,73 @@ async function initiatePayment(data) {
       }
     );
 
-    console.log("Réponse SerdiPay :");
-    console.log(JSON.stringify(response.data, null, 2));
+    
 
-    /**
-     * Sauvegarder le sessionId
-     */
-    if (response.data.payment) {
 
-      await prisma.payment.update({
-        where: {
-          id: payment.id,
-        },
-        data: {
-          sessionId:
-            response.data.payment.sessionId || null,
 
-          transactionId:
-            response.data.payment.transactionId || null,
-        },
-      });
+console.log("Réponse SerdiPay :");
+console.log(JSON.stringify(response.data, null, 2));
 
-    }
 
-    /**
-     * Retour frontend
-     */
-    return {
-      paymentId: payment.id,
-      serdiPay: response.data,
+/**
+ * Sauvegarder sessionId et transactionId
+ */
+if (response.data.payment) {
+
+  await prisma.payment.update({
+    where: {
+      id: payment.id,
+    },
+    data: {
+      sessionId: response.data.payment.sessionId
+        ? String(response.data.payment.sessionId)
+        : null,
+
+      transactionId: response.data.payment.transactionId
+        ? String(response.data.payment.transactionId)
+        : null,
+    },
+  });
+
+}
+
+
+/**
+ * Retour frontend
+ */
+return {
+  paymentId: payment.id,
+  serdiPay: response.data,
+};
+
+
+} catch (error) {
+
+  console.error("\n========================================");
+  console.error("❌ INITIATE PAYMENT");
+  console.error("========================================");
+
+  console.error(error);
+
+  throw error;
+}
+
+
+  if (error.response) {
+
+    console.error(error.response.status);
+    console.error(error.response.data);
+
+    throw {
+      status: error.response.status,
+      message:
+        error.response.data.message ||
+        "Erreur SerdiPay",
+      details: error.response.data,
     };
-
-  } catch (error) {
-
-    /**
-     * Si le paiement existe déjà,
-     * le marquer FAILED
-     */
-
-    console.error("\n========================================");
-    console.error("❌ INITIATE PAYMENT");
-    console.error("========================================");
-
-    if (error.response) {
-
-      console.error(error.response.status);
-      console.error(error.response.data);
-
-      throw {
-        status: error.response.status,
-        message:
-          error.response.data.message ||
-          "Erreur SerdiPay",
-        details: error.response.data,
-      };
-    }
-
-    throw error;
-
   }
+
+  throw error;
 
 }
 
@@ -492,28 +510,18 @@ async function processCallback(callback) {
  * ============================================
  */
 function clearTokenCache() {
-  tokenCache = null;
-  tokenExpiration = null;
+  accessToken = null;
+  tokenExpiresAt = null;
 
-  console.log("🗑️ Cache du token SerdiPay supprimé.");
+  console.log("🗑️ Cache du token supprimé.");
 }
 
-/**
- * ============================================
- * OBTENIR LE TOKEN ACTUEL (DEBUG)
- * ============================================
- */
 function getCurrentToken() {
-  return tokenCache;
+  return accessToken;
 }
 
-/**
- * ============================================
- * OBTENIR LA DATE D'EXPIRATION
- * ============================================
- */
 function getTokenExpiration() {
-  return tokenExpiration;
+  return tokenExpiresAt;
 }
 
 /**
@@ -528,6 +536,9 @@ async function getPaymentStatus(transactionId) {
     console.log("🔎 CONSULTATION TRANSACTION");
     console.log("Transaction :", transactionId);
     console.log("========================================");
+
+    console.log("URL complète token :", `${config.BASE_URL}/merchant/get-token`);
+console.log("URL complète paiement :", `${config.BASE_URL}/merchant/payment-merchant`);
 
     /**
      * Lorsque SerdiPay publiera une API
@@ -562,6 +573,7 @@ async function getPaymentStatus(transactionId) {
 
 module.exports = {
   initiatePayment,
+  processCallback,
   getAccessToken,
   getPaymentStatus,
   clearTokenCache,

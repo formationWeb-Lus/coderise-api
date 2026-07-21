@@ -16,11 +16,13 @@ const app = express();
 app.use(
   cors({
     origin: [
+      "http://localhost:3000",
       "https://coderise-solution.com",
       "https://www.coderise-solution.com",
-      "http://localhost:5000",
     ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
